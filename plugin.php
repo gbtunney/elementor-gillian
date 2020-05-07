@@ -76,7 +76,8 @@ class Plugin {
        // add_action( 'elementor/widget/posts/skins_init',  [ $this,'add_twig_post_skin'] );
 
     }
-	/**
+
+    /**
 	 * Register Widgets
 	 *
 	 * Register new Elementor widgets.
@@ -108,7 +109,107 @@ class Plugin {
 
 		// Register widgets
 		add_action( 'elementor/widgets/widgets_registered', [ $this, 'register_widgets' ] );
-	}
+
+        add_action('elementor/element/after_section_end',  [ $this, 'gbt_register_controls' ],10,3);
+
+        add_action('elementor/element/after_section_end', [$this,'gbt_register_controls'], 10, 3);
+
+        add_action( 'elementor/frontend/section/before_render', [$this,'_before_render']);
+
+
+
+    }
+
+  public  function gbt_register_controls($element, $section_id, $args)
+    {
+        if (($element->get_name() === $element->get_type())) {
+
+            $matchID = ($element->get_name() === 'section') ? 'section_background' : "section_style";
+
+            if (($matchID === $section_id)) {
+              $this->initControlSection($element);
+            }
+        }
+
+        if ($element->get_type() === "widget" && $element->get_name() === 'button' && 'section_style' === $section_id) {
+            // echo "FOUND@@ " . $element->get_name()."::". $section_id ;
+            $this->initControlSection($element);
+        }
+        if ($element->get_type() === "widget" && $element->get_name() === 'icon' && 'section_style_icon' === $section_id) {
+            // echo "FOUND@@ " . $element->get_name()."::". $section_id ;
+            $this->initControlSection($element);
+
+        }
+    }
+
+    private function initControlSection($element)
+    {
+
+        $element->start_controls_section(
+            'gbt_section',
+            [
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+                'label' => __('GILLIAN CUSTOM CSS PICKER', 'wts-eae')
+            ]
+        );
+        $stylesarr = array();
+        foreach (json_decode(PYROMANCY2020_STYLES_COLOR) as &$value) {
+            $variable = ltrim($value, '.'); // substr($value, strpos($value, "."),3);
+            $stylesarr[$variable] = ($variable);
+        }
+        $element->add_control(
+            'gbt_css_picker',
+            [
+                'label' => __('CSS Picker', 'plugin-domain'),
+                'type' => \Elementor\Controls_Manager::SELECT2,
+                'multiple' => true,
+                'options' => $stylesarr,
+                'default' => ['title', 'description'],
+            ]
+        );
+        $element->end_controls_section();
+    }
+
+    public function _before_render($element)
+    {
+
+        if ($element->get_name() == 'section' || $element->get_name() == 'column') {
+            // return;
+            //$element->add_render_attribute('wrapper' , 'data-color' , "gilliantest");
+            // echo $element->get_name() ;
+        }
+        $settings = $element->get_settings();///
+        if (isset ($settings['gbt_css_picker'])) {
+            if (!empty($settings['gbt_css_picker'] && !empty($settings['gbt_css_picker'][0]))) {
+
+                //not sure why this does this...
+                if (isset($settings['gbt_css_picker'][0]) && $settings['gbt_css_picker'][0] == "title") {
+                    return;
+                }
+
+                //print_r($settings['gbt_css_picker']);
+
+                $classArray = array();//$settings['gbt_css_picker'];
+
+                if (!empty($settings['css_classes'])) {
+                    $classArray = explode(" ", $settings['css_classes']);
+                }
+
+                $classArray = array_merge($classArray, $settings['gbt_css_picker']);
+
+                $element->add_render_attribute(
+                    'wrapper',
+                    [
+                        'class' => $classArray,
+                    ]
+                );
+
+                $element->add_render_attribute(
+                    '_wrapper', 'class', $classArray
+                );
+            }
+        }
+    }
 }
 
 // Instantiate Plugin Class

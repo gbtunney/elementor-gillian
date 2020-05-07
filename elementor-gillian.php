@@ -186,3 +186,18 @@ final class Elementor_Hello_World {
 
 // Instantiate Elementor_Hello_World.
 new Elementor_Hello_World();
+
+function twigtemplate_shortcode($atts = [], $content = null)
+{
+    global $post;
+    $timber = new \Timber\Timber();
+    $timberPost = ($atts && isset($atts['post']) && is_numeric($atts['post'])) ? new Timber\Post($atts['post']) : new Timber\Post();
+    $context = array_merge($atts,array("post" => $timberPost, "test" => "green"));
+
+    /*  if (isset($timberPost->test_image) && strlen($timberPost->test_image)) {
+          $timberPost->test_image = new Timber\Image($timberPost->test_image);
+      }*/
+    return $timber::compile_string(stripslashes($content), $context);
+}
+
+add_shortcode('twigtemplate', 'twigtemplate_shortcode');
